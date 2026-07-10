@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nabung - App</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Lock Screen -->
+    <div id="lock-screen" class="lock-screen hidden">
+        <div class="lock-content">
+            <i class="fa-solid fa-lock lock-icon"></i>
+            <h2 id="lock-title">Masukkan PIN</h2>
+            <div class="pin-display">
+                <div class="pin-dot"></div>
+                <div class="pin-dot"></div>
+                <div class="pin-dot"></div>
+                <div class="pin-dot"></div>
+            </div>
+            <div class="numpad">
+                <button class="num-btn" onclick="addPin(1)">1</button>
+                <button class="num-btn" onclick="addPin(2)">2</button>
+                <button class="num-btn" onclick="addPin(3)">3</button>
+                <button class="num-btn" onclick="addPin(4)">4</button>
+                <button class="num-btn" onclick="addPin(5)">5</button>
+                <button class="num-btn" onclick="addPin(6)">6</button>
+                <button class="num-btn" onclick="addPin(7)">7</button>
+                <button class="num-btn" onclick="addPin(8)">8</button>
+                <button class="num-btn" onclick="addPin(9)">9</button>
+                <button class="num-btn action-btn" onclick="clearPin()"><i class="fa-solid fa-xmark"></i></button>
+                <button class="num-btn" onclick="addPin(0)">0</button>
+                <button class="num-btn action-btn" onclick="removePin()"><i class="fa-solid fa-delete-left"></i></button>
+            </div>
+            <p id="pin-message" style="color: var(--expense); margin-top: 15px; font-weight: 600;"></p>
+        </div>
+    </div>
+
+    <div class="background-mesh"></div>
+    
+    <div class="app-layout">
+        
+        <!-- Desktop Sidebar (Hidden on Mobile) -->
+        <aside class="desktop-sidebar">
+            <div class="sidebar-logo">
+                <i class="fa-solid fa-piggy-bank"></i>
+                <h2>Nabung</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-target="tab-home">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Beranda</span>
+                </button>
+                <button class="nav-item" data-target="tab-history">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>Riwayat Transaksi</span>
+                </button>
+                <button class="nav-item" data-target="tab-calendar">
+                    <i class="fa-solid fa-calendar"></i>
+                    <span>Kalender</span>
+                </button>
+                <button class="nav-item" data-target="tab-ai">
+                    <i class="fa-solid fa-sparkles"></i>
+                    <span>Konsultasi AI</span>
+                </button>
+            </nav>
+            <div class="sidebar-bottom">
+                <button id="desktop-add-btn" class="btn primary-btn full-width">
+                    <i class="fa-solid fa-plus"></i> Catat Transaksi
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <div class="main-content-wrapper">
+            
+            <!-- Top App Bar -->
+            <header class="app-bar">
+                <div class="user-profile">
+                    <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                    <div class="greeting">
+                        <span class="hello">Halo,</span>
+                        <span class="name">Pengguna</span>
+                    </div>
+                </div>
+                <div class="header-actions" style="display: flex; gap: 10px;">
+                    <button id="theme-toggle-btn" class="icon-btn header-btn"><i class="fa-solid fa-moon"></i></button>
+                    <button id="settings-toggle-btn" class="icon-btn header-btn"><i class="fa-solid fa-gear"></i></button>
+                </div>
+            </header>
+
+            <!-- Scrollable Content Area -->
+            <main class="content-area">
+                
+                <!-- TAB: HOME -->
+                <div id="tab-home" class="tab-content active">
+                    <div class="desktop-grid">
+                        
+                        <!-- Left Column (Desktop) -->
+                        <div class="grid-left">
+                            <section class="glass-card balance-card">
+                                <h2>Total Tabungan</h2>
+                                <h1 id="total-balance">Rp 0</h1>
+                                
+                                <div class="balance-stats">
+                                    <div class="stat income">
+                                        <i class="fa-solid fa-arrow-trend-up"></i>
+                                        <div>
+                                            <span>Pemasukan</span>
+                                            <strong id="total-income">Rp 0</strong>
+                                        </div>
+                                    </div>
+                                    <div class="stat expense">
+                                        <i class="fa-solid fa-arrow-trend-down"></i>
+                                        <div>
+                                            <span>Pengeluaran</span>
+                                            <strong id="total-expense">Rp 0</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="budget-container" style="margin-top: 1.5rem; display: none;">
+                                    <div class="progress-labels">
+                                        <span>Budget Bulanan</span>
+                                        <span id="budget-text">0 / 0</span>
+                                    </div>
+                                    <div class="progress-bar-wrapper" style="height: 6px;">
+                                        <div id="budget-bar" class="progress-bar" style="width: 0%; background: var(--expense);"></div>
+                                    </div>
+                                </div>
+                            </section>
+                            
+                            <!-- AI Advisor Card -->
+                            <section class="glass-card ai-card">
+                                <div class="ai-header">
+                                    <div style="display: flex; align-items: center; gap: 0.8rem;">
+                                        <img src="ai_logo.png" alt="AI Avatar" class="ai-avatar">
+                                        <h2>AI Advisor</h2>
+                                    </div>
+                                    <div class="ai-status">AI v2.0</div>
+                                </div>
+                                <div class="ai-content">
+                                    <p id="ai-message">Menganalisis data keuangan Anda...</p>
+                                    <span class="ai-cursor">|</span>
+                                </div>
+                            </section>
+
+                            <section class="glass-card chart-card">
+                                <h2>Analisis Pengeluaran</h2>
+                                <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
+                                    <canvas id="expenseChart"></canvas>
+                                </div>
+                            </section>
+
+                            <section class="recent-transactions mobile-only-section">
+                                <div class="section-header">
+                                    <h3>Transaksi Terbaru</h3>
+                                    <button id="view-all-btn" class="text-btn">Lihat Semua</button>
+                                </div>
+                                <ul id="recent-transaction-list" class="transaction-list">
+                                    <!-- Max 3 recent items injected via JS -->
+                                </ul>
+                            </section>
+                        </div>
+                        
+                        <!-- Right Column (Desktop) -->
+                        <div class="grid-right">
+                            <section class="glass-card goal-card">
+                                <div class="card-header">
+                                    <h2>Target Tabungan</h2>
+                                    <button id="add-goal-btn" class="icon-btn"><i class="fa-solid fa-plus"></i></button>
+                                </div>
+                                
+                                <div id="goals-list" class="goals-list">
+                                    <!-- Goals will be injected here via JS -->
+                                </div>
+
+                                <form id="goal-form" class="hidden">
+                                    <div class="form-group">
+                                        <input type="text" id="goal-name-input" placeholder="Nama Target (Misal: Laptop)" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="number" id="goal-amount-input" placeholder="Jumlah (Misal: 10000000)" required>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn primary-btn">Simpan</button>
+                                        <button type="button" id="cancel-goal-btn" class="btn secondary-btn">Batal</button>
+                                    </div>
+                                </form>
+                            </section>
+                            
+                            <!-- Desktop Recent Transactions -->
+                            <section class="recent-transactions desktop-only-section glass-card">
+                                <div class="section-header" style="margin-top: 0">
+                                    <h3>Transaksi Terbaru</h3>
+                                    <button id="desktop-view-all-btn" class="text-btn">Lihat Riwayat</button>
+                                </div>
+                                <ul id="desktop-recent-transaction-list" class="transaction-list">
+                                    <!-- Max 4 recent items injected via JS -->
+                                </ul>
+                            </section>
+                        </div>
+
+                    </div>
+                    <!-- Spacer for Bottom Nav (Mobile) -->
+                    <div class="bottom-spacer mobile-only-spacer"></div>
+                </div>
+
+                <!-- TAB: CALENDAR -->
+                <div id="tab-calendar" class="tab-content">
+                    <section class="glass-card">
+                        <div class="section-header" style="margin-top: 0;">
+                            <h2>Kalender Transaksi</h2>
+                            <div style="display: flex; gap: 1rem;">
+                                <button class="icon-btn" id="prev-month-btn" style="width: 35px; height: 35px;"><i class="fa-solid fa-chevron-left"></i></button>
+                                <h3 id="calendar-month-year" style="line-height: 35px; margin: 0;">Juli 2026</h3>
+                                <button class="icon-btn" id="next-month-btn" style="width: 35px; height: 35px;"><i class="fa-solid fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <div class="calendar-wrapper" style="overflow-x: auto;">
+                            <table class="calendar-grid">
+                                <thead>
+                                    <tr>
+                                        <th>Min</th><th>Sen</th><th>Sel</th><th>Rab</th><th>Kam</th><th>Jum</th><th>Sab</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="calendar-body">
+                                    <!-- Generated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="calendar-day-details" style="margin-top: 1.5rem; display: none;">
+                            <h3 id="selected-date-title" style="margin-bottom: 1rem;">Transaksi Tanggal</h3>
+                            <ul id="selected-date-transactions" class="transaction-list"></ul>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- TAB: HISTORY -->
+                <div id="tab-history" class="tab-content">
+                    <div class="section-header sticky-header">
+                        <h2>Semua Riwayat</h2>
+                    </div>
+                    <ul id="full-transaction-list" class="transaction-list full-height">
+                        <!-- All transactions injected via JS -->
+                    </ul>
+                    <div class="bottom-spacer mobile-only-spacer"></div>
+                </div>
+
+                <!-- TAB: AI CHAT -->
+                <div id="tab-ai" class="tab-content">
+                    <div class="section-header sticky-header" style="margin-bottom: 0;">
+                        <h2><i class="fa-solid fa-sparkles" style="color: #a855f7;"></i> Konsultasi AI</h2>
+                    </div>
+                    
+                    <div class="chat-container">
+                        <div id="chat-messages" class="chat-messages full-height">
+                            <!-- Welcome Message -->
+                            <div class="chat-bubble ai-bubble">
+                                Halo! Saya adalah AI Advisor lokal Anda. Tanyakan saya soal "saldo", "pengeluaran", atau minta "tips hemat"!
+                            </div>
+                        </div>
+                        
+                        <div class="chat-input-area">
+                            <form id="chat-form" style="display: flex; gap: 10px; width: 100%;">
+                                <input type="text" id="chat-input" placeholder="Tanya AI..." required autocomplete="off" style="flex: 1;">
+                                <button type="submit" class="icon-btn primary-btn" style="width: 55px; height: 55px; margin: 0;"><i class="fa-solid fa-paper-plane"></i></button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+            </main>
+        </div>
+
+        <!-- Mobile Bottom Navigation Bar (Hidden on Desktop) -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-target="tab-home">
+                <i class="fa-solid fa-house"></i>
+                <span>Beranda</span>
+            </button>
+            <button class="nav-item" data-target="tab-calendar">
+                <i class="fa-solid fa-calendar"></i>
+                <span>Kalender</span>
+            </button>
+            <button class="nav-item" data-target="tab-ai">
+                <i class="fa-solid fa-sparkles"></i>
+                <span>AI</span>
+            </button>
+            <button class="nav-item" data-target="tab-history">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Riwayat</span>
+            </button>
+        </nav>
+
+        <!-- Mobile Floating Action Button (Hidden on Desktop) -->
+        <button id="fab-add" class="fab">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+
+        <!-- Form Modal / Bottom Sheet -->
+        <div id="transaction-sheet" class="bottom-sheet">
+            <div class="sheet-overlay" id="sheet-overlay"></div>
+            <div class="sheet-content">
+                <div class="sheet-handle mobile-only"></div>
+                <div class="modal-header">
+                    <h2>Catat Transaksi</h2>
+                    <button id="close-modal-btn" class="icon-btn desktop-only"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <form id="transaction-form">
+                    <div class="type-group">
+                        <label class="radio-label income-radio">
+                            <input type="radio" name="trans-type" value="income" checked>
+                            <span>Pemasukan</span>
+                        </label>
+                        <label class="radio-label expense-radio">
+                            <input type="radio" name="trans-type" value="expense">
+                            <span>Pengeluaran</span>
+                        </label>
+                    </div>
+                    <div class="form-group category-group">
+                        <label class="category-title">Kategori</label>
+                        <div class="category-grid" id="category-selector">
+                            <label class="cat-label">
+                                <input type="radio" name="trans-category" value="Makanan" checked>
+                                <span class="cat-icon"><i class="fa-solid fa-burger"></i></span>
+                                <span class="cat-name">Makanan</span>
+                            </label>
+                            <label class="cat-label">
+                                <input type="radio" name="trans-category" value="Transportasi">
+                                <span class="cat-icon"><i class="fa-solid fa-car"></i></span>
+                                <span class="cat-name">Transport</span>
+                            </label>
+                            <label class="cat-label">
+                                <input type="radio" name="trans-category" value="Belanja">
+                                <span class="cat-icon"><i class="fa-solid fa-bag-shopping"></i></span>
+                                <span class="cat-name">Belanja</span>
+                            </label>
+                            <label class="cat-label">
+                                <input type="radio" name="trans-category" value="Tagihan">
+                                <span class="cat-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>
+                                <span class="cat-name">Tagihan</span>
+                            </label>
+                            <label class="cat-label">
+                                <input type="radio" name="trans-category" value="Hiburan">
+                                <span class="cat-icon"><i class="fa-solid fa-gamepad"></i></span>
+                                <span class="cat-name">Hiburan</span>
+                            </label>
+                            <label class="cat-label">
+                                <input type="radio" name="trans-category" value="Lainnya">
+                                <span class="cat-icon"><i class="fa-solid fa-ellipsis"></i></span>
+                                <span class="cat-name">Lainnya</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="category-title">Pilih Tabungan / Dompet</label>
+                        <select id="trans-goal" class="form-select">
+                            <option value="main">Dompet Utama</option>
+                            <!-- Goals injected via JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <input type="number" id="trans-amount" placeholder="Jumlah (Rp)" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="trans-desc" placeholder="Keterangan (Misal: Uang Jajan)" required>
+                    </div>
+                    <button type="submit" class="btn primary-btn full-width">Simpan Transaksi</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lock Screen -->
+    <div id="lock-screen" class="lock-screen hidden">
+        <div class="lock-content">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <div style="width: 40px;"></div>
+                <i class="fa-solid fa-lock lock-icon"></i>
+                <button class="icon-btn" onclick="closePinModal()" id="close-pin-btn" style="background: transparent; border: none; box-shadow: none; color: var(--text-muted);"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <h2 id="lock-title">Masukkan PIN</h2>
+            <div class="pin-display">
+                <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+                <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+            </div>
+            <div id="pin-message" style="margin-bottom: 20px; font-weight: 500;"></div>
+            
+            <div class="numpad">
+                <button class="num-btn" onclick="addPin('1')">1</button>
+                <button class="num-btn" onclick="addPin('2')">2</button>
+                <button class="num-btn" onclick="addPin('3')">3</button>
+                <button class="num-btn" onclick="addPin('4')">4</button>
+                <button class="num-btn" onclick="addPin('5')">5</button>
+                <button class="num-btn" onclick="addPin('6')">6</button>
+                <button class="num-btn" onclick="addPin('7')">7</button>
+                <button class="num-btn" onclick="addPin('8')">8</button>
+                <button class="num-btn" onclick="addPin('9')">9</button>
+                <button class="num-btn action-btn" onclick="clearPin()">C</button>
+                <button class="num-btn" onclick="addPin('0')">0</button>
+                <button class="num-btn action-btn" onclick="removePin()"><i class="fa-solid fa-delete-left"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Sheet -->
+    <div id="settings-sheet" class="bottom-sheet">
+        <div class="sheet-overlay" id="settings-overlay"></div>
+        <div class="sheet-content">
+            <div class="sheet-handle mobile-only"></div>
+            <div class="modal-header">
+                <h2>Pengaturan</h2>
+                <button id="close-settings-btn" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="settings-list">
+                <div class="form-group">
+                    <label class="category-title">Batas Pengeluaran Bulanan (Budget)</label>
+                    <input type="number" id="budget-input" class="form-select" placeholder="Misal: 5000000" style="margin-bottom: 10px;">
+                    <button class="btn secondary-btn" onclick="saveBudget()" style="margin-top: 0;">Simpan Budget</button>
+                </div>
+                <div class="form-group" style="margin-top: 2rem;">
+                    <label class="category-title">Keamanan</label>
+                    <button class="btn secondary-btn" id="setup-pin-btn" style="text-align: left; justify-content: flex-start; margin-top: 5px;">
+                        <i class="fa-solid fa-key"></i> Atur PIN Keamanan
+                    </button>
+                </div>
+                <div class="form-group" style="margin-top: 2rem;">
+                    <label class="category-title">Backup & Restore</label>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <button class="btn secondary-btn" id="export-btn" style="flex:1;">
+                            <i class="fa-solid fa-download"></i> Export
+                        </button>
+                        <button class="btn secondary-btn" id="import-btn-trigger" style="flex:1;">
+                            <i class="fa-solid fa-upload"></i> Import
+                        </button>
+                        <input type="file" id="import-file" accept=".json" style="display: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
