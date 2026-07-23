@@ -2,8 +2,16 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nabung - App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#050505">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <!-- iOS Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Savora">
+    <link rel="apple-touch-icon" href="ai_logo.png">
+    <title>Savora - App</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Font Awesome for icons -->
@@ -12,6 +20,26 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <!-- Splash Screen -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo">
+                <i class="fa-solid fa-leaf"></i>
+            </div>
+            <h1 class="splash-title">Savora</h1>
+            <p class="splash-subtitle">Premium Financial AI</p>
+        </div>
+    </div>
+
+    <!-- Image Viewer Modal -->
+    <div id="image-viewer" class="bottom-sheet" style="z-index: 200;">
+        <div class="sheet-overlay" id="image-overlay"></div>
+        <div class="sheet-content" style="background: transparent; border: none; box-shadow: none; max-width: 90vw; padding: 1rem;">
+            <button id="close-image-btn" class="icon-btn" style="position: absolute; top: 10px; right: 10px; z-index: 10; background: rgba(0,0,0,0.5);"><i class="fa-solid fa-xmark"></i></button>
+            <img id="image-viewer-img" style="width: 100%; max-height: 80vh; object-fit: contain; border-radius: 16px;">
+        </div>
+    </div>
+
     <!-- Lock Screen -->
     <div id="lock-screen" class="lock-screen hidden">
         <div class="lock-content">
@@ -68,6 +96,10 @@
                     <i class="fa-solid fa-sparkles"></i>
                     <span>Konsultasi AI</span>
                 </button>
+                <button class="nav-item" data-target="tab-report">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Laporan</span>
+                </button>
             </nav>
             <div class="sidebar-bottom">
                 <button id="desktop-add-btn" class="btn primary-btn full-width">
@@ -88,9 +120,10 @@
                         <span class="name">Pengguna</span>
                     </div>
                 </div>
-                <div class="header-actions" style="display: flex; gap: 10px;">
-                    <button id="theme-toggle-btn" class="icon-btn header-btn"><i class="fa-solid fa-moon"></i></button>
-                    <button id="settings-toggle-btn" class="icon-btn header-btn"><i class="fa-solid fa-gear"></i></button>
+                <div class="header-actions">
+                    <button id="undo-btn" class="icon-btn" style="display: none;"><i class="fa-solid fa-rotate-left"></i></button>
+                    <button id="theme-toggle-btn" class="icon-btn"><i class="fa-solid fa-moon"></i></button>
+                    <button id="settings-toggle-btn" class="icon-btn"><i class="fa-solid fa-gear"></i></button>
                 </div>
             </header>
 
@@ -123,21 +156,29 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div id="budget-container" style="margin-top: 1.5rem; display: none;">
+                                <div id="budget-container" class="budget-section" style="display: none;">
                                     <div class="progress-labels">
                                         <span>Budget Bulanan</span>
                                         <span id="budget-text">0 / 0</span>
                                     </div>
-                                    <div class="progress-bar-wrapper" style="height: 6px;">
+                                    <div class="progress-bar-wrapper">
                                         <div id="budget-bar" class="progress-bar" style="width: 0%; background: var(--expense);"></div>
                                     </div>
+                                </div>
+                                <div class="quick-actions">
+                                    <button id="quick-receipt-btn" class="quick-action-btn receipt">
+                                        <i class="fa-solid fa-camera"></i> Foto Struk
+                                    </button>
+                                    <button id="desktop-add-btn-2" class="quick-action-btn primary" onclick="openSheet()">
+                                        <i class="fa-solid fa-plus"></i> Catat
+                                    </button>
                                 </div>
                             </section>
                             
                             <!-- AI Advisor Card -->
                             <section class="glass-card ai-card">
                                 <div class="ai-header">
-                                    <div style="display: flex; align-items: center; gap: 0.8rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
                                         <img src="ai_logo.png" alt="AI Avatar" class="ai-avatar">
                                         <h2>AI Advisor</h2>
                                     </div>
@@ -151,9 +192,89 @@
 
                             <section class="glass-card chart-card">
                                 <h2>Analisis Pengeluaran</h2>
-                                <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
+                                <div class="chart-container">
                                     <canvas id="expenseChart"></canvas>
                                 </div>
+                            </section>
+
+                            <!-- Transaksi Berulang -->
+                            <section class="glass-card recurring-card">
+                                <div class="card-header">
+                                    <h2>Transaksi Berulang</h2>
+                                    <button id="add-recurring-transaction-btn" class="icon-btn"><i class="fa-solid fa-plus"></i></button>
+                                </div>
+                                <div id="recurring-transactions-list" class="recurring-list"></div>
+                                <form id="recurring-transaction-form" class="hidden">
+                                    <div class="type-group">
+                                        <label class="radio-label income-radio">
+                                            <input type="radio" name="recurring-type" value="income" checked>
+                                            <span>Pemasukan</span>
+                                        </label>
+                                        <label class="radio-label expense-radio">
+                                            <input type="radio" name="recurring-type" value="expense">
+                                            <span>Pengeluaran</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-group recurring-category-group">
+                                        <label class="category-title">Kategori</label>
+                                        <div class="category-grid">
+                                            <label class="cat-label">
+                                                <input type="radio" name="recurring-category" value="Makanan" checked>
+                                                <span class="cat-icon"><i class="fa-solid fa-burger"></i></span>
+                                                <span class="cat-name">Makanan</span>
+                                            </label>
+                                            <label class="cat-label">
+                                                <input type="radio" name="recurring-category" value="Transportasi">
+                                                <span class="cat-icon"><i class="fa-solid fa-car"></i></span>
+                                                <span class="cat-name">Transport</span>
+                                            </label>
+                                            <label class="cat-label">
+                                                <input type="radio" name="recurring-category" value="Belanja">
+                                                <span class="cat-icon"><i class="fa-solid fa-bag-shopping"></i></span>
+                                                <span class="cat-name">Belanja</span>
+                                            </label>
+                                            <label class="cat-label">
+                                                <input type="radio" name="recurring-category" value="Tagihan">
+                                                <span class="cat-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>
+                                                <span class="cat-name">Tagihan</span>
+                                            </label>
+                                            <label class="cat-label">
+                                                <input type="radio" name="recurring-category" value="Hiburan">
+                                                <span class="cat-icon"><i class="fa-solid fa-gamepad"></i></span>
+                                                <span class="cat-name">Hiburan</span>
+                                            </label>
+                                            <label class="cat-label">
+                                                <input type="radio" name="recurring-category" value="Lainnya">
+                                                <span class="cat-icon"><i class="fa-solid fa-ellipsis"></i></span>
+                                                <span class="cat-name">Lainnya</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="category-title">Target Tabungan</label>
+                                        <select id="rt-goal-id" class="form-select" style="margin-bottom: 0;">
+                                            <option value="main">Dompet Utama</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" id="rt-amount-input" placeholder="Jumlah per periode (Rp)" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" id="rt-desc-input" placeholder="Keterangan (Misal: Bayar Kos)" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="category-title">Frekuensi</label>
+                                        <select id="rt-frequency" class="form-select" style="margin-bottom: 0;">
+                                            <option value="daily">Harian</option>
+                                            <option value="weekly">Mingguan</option>
+                                            <option value="monthly" selected>Bulanan</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn primary-btn">Simpan</button>
+                                        <button type="button" id="cancel-recurring-transaction-btn" class="btn secondary-btn">Batal</button>
+                                    </div>
+                                </form>
                             </section>
 
                             <section class="recent-transactions mobile-only-section">
@@ -186,13 +307,52 @@
                                     <div class="form-group">
                                         <input type="number" id="goal-amount-input" placeholder="Jumlah (Misal: 10000000)" required>
                                     </div>
+                                    <div class="form-group">
+                                        <label class="category-title">Tenggat Waktu (Opsional)</label>
+                                        <input type="date" id="goal-deadline-input" class="form-select" style="margin-bottom: 0;">
+                                    </div>
                                     <div class="form-actions">
                                         <button type="submit" class="btn primary-btn">Simpan</button>
                                         <button type="button" id="cancel-goal-btn" class="btn secondary-btn">Batal</button>
                                     </div>
                                 </form>
                             </section>
-                            
+
+                            <!-- Tabungan Berkala -->
+                            <section class="glass-card recurring-card">
+                                <div class="card-header">
+                                    <h2>Tabungan Berkala</h2>
+                                    <button id="add-recurring-savings-btn" class="icon-btn"><i class="fa-solid fa-plus"></i></button>
+                                </div>
+                                <div id="recurring-savings-list" class="recurring-list"></div>
+                                <form id="recurring-savings-form" class="hidden">
+                                    <div class="form-group">
+                                        <input type="text" id="rs-name-input" placeholder="Nama (Misal: Nabung Harian)" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" id="rs-amount-input" placeholder="Jumlah per periode (Rp)" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="category-title">Frekuensi</label>
+                                        <select id="rs-frequency" class="form-select" style="margin-bottom: 0;">
+                                            <option value="daily">Harian</option>
+                                            <option value="weekly">Mingguan</option>
+                                            <option value="monthly" selected>Bulanan</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="category-title">Target Tabungan</label>
+                                        <select id="rs-goal-id" class="form-select" style="margin-bottom: 0;">
+                                            <option value="main">Dompet Utama</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn primary-btn">Simpan</button>
+                                        <button type="button" id="cancel-recurring-savings-btn" class="btn secondary-btn">Batal</button>
+                                    </div>
+                                </form>
+                            </section>
+
                             <!-- Desktop Recent Transactions -->
                             <section class="recent-transactions desktop-only-section glass-card">
                                 <div class="section-header" style="margin-top: 0">
@@ -203,6 +363,30 @@
                                     <!-- Max 4 recent items injected via JS -->
                                 </ul>
                             </section>
+
+                            <!-- Tabungan Bersama -->
+                            <section class="glass-card">
+                                <div class="card-header">
+                                    <h2>Tabungan Bersama</h2>
+                                    <button id="add-group-btn" class="icon-btn"><i class="fa-solid fa-plus"></i></button>
+                                </div>
+                                <div id="groups-list"></div>
+                                <form id="group-form" class="hidden">
+                                    <div class="form-group">
+                                        <input type="text" id="group-name-input" placeholder="Nama Grup (Misal: Liburan)" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" id="group-target-input" placeholder="Target Total (Rp)" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" id="group-members-input" placeholder="Anggota (pisahkan koma: Andi, Budi, Sari)">
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn primary-btn">Simpan</button>
+                                        <button type="button" id="cancel-group-btn" class="btn secondary-btn">Batal</button>
+                                    </div>
+                                </form>
+                            </section>
                         </div>
 
                     </div>
@@ -210,15 +394,219 @@
                     <div class="bottom-spacer mobile-only-spacer"></div>
                 </div>
 
+                <!-- TAB: GOALS -->
+                <div id="tab-goals" class="tab-content">
+                    <div class="section-header sticky-header">
+                        <button class="icon-btn" onclick="switchTab('tab-home')" style="margin-right: 0.5rem;"><i class="fa-solid fa-arrow-left"></i></button>
+                        <h2 style="flex: 1; margin: 0;">Target Tabungan</h2>
+                    </div>
+                    <div style="padding: 1rem;">
+                        <section class="glass-card goal-card">
+                            <div class="card-header">
+                                <h2>Semua Target</h2>
+                                <button id="add-goal-btn" class="icon-btn"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            
+                            <div id="goals-list" class="goals-list">
+                                <!-- Goals will be injected here via JS -->
+                            </div>
+
+                            <form id="goal-form" class="hidden">
+                                <div class="form-group">
+                                    <input type="text" id="goal-name-input" placeholder="Nama Target (Misal: Laptop)" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="number" id="goal-amount-input" placeholder="Jumlah (Misal: 10000000)" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="category-title">Tenggat Waktu (Opsional)</label>
+                                    <input type="date" id="goal-deadline-input" class="form-select" style="margin-bottom: 0;">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn primary-btn">Simpan</button>
+                                    <button type="button" id="cancel-goal-btn" class="btn secondary-btn">Batal</button>
+                                </div>
+                            </form>
+                        </section>
+                    </div>
+                    <div class="bottom-spacer mobile-only-spacer"></div>
+                </div>
+
+                <!-- TAB: RECURRING SAVINGS -->
+                <div id="tab-recurring-savings" class="tab-content">
+                    <div class="section-header sticky-header">
+                        <button class="icon-btn" onclick="switchTab('tab-home')" style="margin-right: 0.5rem;"><i class="fa-solid fa-arrow-left"></i></button>
+                        <h2 style="flex: 1; margin: 0;">Tabungan Berkala</h2>
+                    </div>
+                    <div style="padding: 1rem;">
+                        <section class="glass-card recurring-card">
+                            <div class="card-header">
+                                <h2>Semua Tabungan Berkala</h2>
+                                <button id="add-recurring-savings-btn" class="icon-btn"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="recurring-savings-list" class="recurring-list"></div>
+                            <form id="recurring-savings-form" class="hidden">
+                                <div class="form-group">
+                                    <input type="text" id="rs-name-input" placeholder="Nama (Misal: Nabung Harian)" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" id="rs-amount-input" placeholder="Jumlah per periode (Rp)" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="category-title">Frekuensi</label>
+                                    <select id="rs-frequency" class="form-select" style="margin-bottom: 0;">
+                                        <option value="daily">Harian</option>
+                                        <option value="weekly">Mingguan</option>
+                                        <option value="monthly" selected>Bulanan</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="category-title">Target Tabungan</label>
+                                    <select id="rs-goal-id" class="form-select" style="margin-bottom: 0;">
+                                        <option value="main">Dompet Utama</option>
+                                    </select>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn primary-btn">Simpan</button>
+                                    <button type="button" id="cancel-recurring-savings-btn" class="btn secondary-btn">Batal</button>
+                                </div>
+                            </form>
+                        </section>
+                    </div>
+                    <div class="bottom-spacer mobile-only-spacer"></div>
+                </div>
+
+                <!-- TAB: RECURRING TRANSACTIONS -->
+                <div id="tab-recurring-transactions" class="tab-content">
+                    <div class="section-header sticky-header">
+                        <button class="icon-btn" onclick="switchTab('tab-home')" style="margin-right: 0.5rem;"><i class="fa-solid fa-arrow-left"></i></button>
+                        <h2 style="flex: 1; margin: 0;">Transaksi Berulang</h2>
+                    </div>
+                    <div style="padding: 1rem;">
+                        <section class="glass-card recurring-card">
+                            <div class="card-header">
+                                <h2>Semua Transaksi Berulang</h2>
+                                <button id="add-recurring-transaction-btn" class="icon-btn"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="recurring-transactions-list" class="recurring-list"></div>
+                            <form id="recurring-transaction-form" class="hidden">
+                                <div class="type-group">
+                                    <label class="radio-label income-radio">
+                                        <input type="radio" name="recurring-type" value="income" checked>
+                                        <span>Pemasukan</span>
+                                    </label>
+                                    <label class="radio-label expense-radio">
+                                        <input type="radio" name="recurring-type" value="expense">
+                                        <span>Pengeluaran</span>
+                                    </label>
+                                </div>
+                                <div class="form-group recurring-category-group">
+                                    <label class="category-title">Kategori</label>
+                                    <div class="category-grid">
+                                        <label class="cat-label">
+                                            <input type="radio" name="recurring-category" value="Makanan" checked>
+                                            <span class="cat-icon"><i class="fa-solid fa-burger"></i></span>
+                                            <span class="cat-name">Makanan</span>
+                                        </label>
+                                        <label class="cat-label">
+                                            <input type="radio" name="recurring-category" value="Transportasi">
+                                            <span class="cat-icon"><i class="fa-solid fa-car"></i></span>
+                                            <span class="cat-name">Transport</span>
+                                        </label>
+                                        <label class="cat-label">
+                                            <input type="radio" name="recurring-category" value="Belanja">
+                                            <span class="cat-icon"><i class="fa-solid fa-bag-shopping"></i></span>
+                                            <span class="cat-name">Belanja</span>
+                                        </label>
+                                        <label class="cat-label">
+                                            <input type="radio" name="recurring-category" value="Tagihan">
+                                            <span class="cat-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>
+                                            <span class="cat-name">Tagihan</span>
+                                        </label>
+                                        <label class="cat-label">
+                                            <input type="radio" name="recurring-category" value="Hiburan">
+                                            <span class="cat-icon"><i class="fa-solid fa-gamepad"></i></span>
+                                            <span class="cat-name">Hiburan</span>
+                                        </label>
+                                        <label class="cat-label">
+                                            <input type="radio" name="recurring-category" value="Lainnya">
+                                            <span class="cat-icon"><i class="fa-solid fa-ellipsis"></i></span>
+                                            <span class="cat-name">Lainnya</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="category-title">Target Tabungan</label>
+                                    <select id="rt-goal-id" class="form-select" style="margin-bottom: 0;">
+                                        <option value="main">Dompet Utama</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" id="rt-amount-input" placeholder="Jumlah per periode (Rp)" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" id="rt-desc-input" placeholder="Keterangan (Misal: Bayar Kos)" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="category-title">Frekuensi</label>
+                                    <select id="rt-frequency" class="form-select" style="margin-bottom: 0;">
+                                        <option value="daily">Harian</option>
+                                        <option value="weekly">Mingguan</option>
+                                        <option value="monthly" selected>Bulanan</option>
+                                    </select>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn primary-btn">Simpan</button>
+                                    <button type="button" id="cancel-recurring-transaction-btn" class="btn secondary-btn">Batal</button>
+                                </div>
+                            </form>
+                        </section>
+                    </div>
+                    <div class="bottom-spacer mobile-only-spacer"></div>
+                </div>
+
+                <!-- TAB: GROUPS -->
+                <div id="tab-groups" class="tab-content">
+                    <div class="section-header sticky-header">
+                        <button class="icon-btn" onclick="switchTab('tab-home')" style="margin-right: 0.5rem;"><i class="fa-solid fa-arrow-left"></i></button>
+                        <h2 style="flex: 1; margin: 0;">Tabungan Bersama</h2>
+                    </div>
+                    <div style="padding: 1rem;">
+                        <section class="glass-card">
+                            <div class="card-header">
+                                <h2>Semua Tabungan Bersama</h2>
+                                <button id="add-group-btn" class="icon-btn"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="groups-list"></div>
+                            <form id="group-form" class="hidden">
+                                <div class="form-group">
+                                    <input type="text" id="group-name-input" placeholder="Nama Grup (Misal: Liburan)" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" id="group-target-input" placeholder="Target Total (Rp)" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" id="group-members-input" placeholder="Anggota (pisahkan koma: Andi, Budi, Sari)">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn primary-btn">Simpan</button>
+                                    <button type="button" id="cancel-group-btn" class="btn secondary-btn">Batal</button>
+                                </div>
+                            </form>
+                        </section>
+                    </div>
+                    <div class="bottom-spacer mobile-only-spacer"></div>
+                </div>
+
                 <!-- TAB: CALENDAR -->
                 <div id="tab-calendar" class="tab-content">
                     <section class="glass-card">
-                        <div class="section-header" style="margin-top: 0;">
+                        <div class="card-header">
                             <h2>Kalender Transaksi</h2>
-                            <div style="display: flex; gap: 1rem;">
-                                <button class="icon-btn" id="prev-month-btn" style="width: 35px; height: 35px;"><i class="fa-solid fa-chevron-left"></i></button>
-                                <h3 id="calendar-month-year" style="line-height: 35px; margin: 0;">Juli 2026</h3>
-                                <button class="icon-btn" id="next-month-btn" style="width: 35px; height: 35px;"><i class="fa-solid fa-chevron-right"></i></button>
+                            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                <button class="icon-btn" id="prev-month-btn" style="width: 36px; height: 36px;"><i class="fa-solid fa-chevron-left"></i></button>
+                                <h3 id="calendar-month-year" style="margin: 0; font-size: 1rem; font-weight: 700;">Juli 2026</h3>
+                                <button class="icon-btn" id="next-month-btn" style="width: 36px; height: 36px;"><i class="fa-solid fa-chevron-right"></i></button>
                             </div>
                         </div>
                         <div class="calendar-wrapper" style="overflow-x: auto;">
@@ -233,8 +621,8 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div id="calendar-day-details" style="margin-top: 1.5rem; display: none;">
-                            <h3 id="selected-date-title" style="margin-bottom: 1rem;">Transaksi Tanggal</h3>
+                        <div id="calendar-day-details" style="margin-top: 1rem; display: none;">
+                            <h3 id="selected-date-title" class="report-section-title">Transaksi Tanggal</h3>
                             <ul id="selected-date-transactions" class="transaction-list"></ul>
                         </div>
                     </section>
@@ -242,10 +630,44 @@
 
                 <!-- TAB: HISTORY -->
                 <div id="tab-history" class="tab-content">
-                    <div class="section-header sticky-header">
-                        <h2>Semua Riwayat</h2>
+                <div class="section-header sticky-header">
+                    <h2>Semua Riwayat</h2>
+                    <button id="toggle-filter-btn" class="icon-btn" style="width: 36px; height: 36px;"><i class="fa-solid fa-filter"></i></button>
+                </div>
+
+                <!-- Filter Bar -->
+                <div id="filter-bar" class="glass-card filter-bar">
+                    <div class="filter-row">
+                        <input type="text" id="filter-search" placeholder="Cari transaksi..." style="flex: 1; min-width: 180px;">
+                        <select id="filter-category" class="form-select" style="flex: 0.5;">
+                            <option value="">Semua Kategori</option>
+                        </select>
                     </div>
-                    <ul id="full-transaction-list" class="transaction-list full-height">
+                    <div class="filter-row">
+                        <div style="flex: 1; min-width: 130px;">
+                            <label class="category-title">Dari</label>
+                            <input type="date" id="filter-date-start" class="form-select" style="margin-bottom: 0;">
+                        </div>
+                        <div style="flex: 1; min-width: 130px;">
+                            <label class="category-title">Sampai</label>
+                            <input type="date" id="filter-date-end" class="form-select" style="margin-bottom: 0;">
+                        </div>
+                        <div style="flex: 1; min-width: 100px;">
+                            <label class="category-title">Min</label>
+                            <input type="text" id="filter-amount-min" placeholder="0" style="margin-bottom: 0;">
+                        </div>
+                        <div style="flex: 1; min-width: 100px;">
+                            <label class="category-title">Max</label>
+                            <input type="text" id="filter-amount-max" placeholder="0" style="margin-bottom: 0;">
+                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button id="filter-apply-btn" class="btn primary-btn">Terapkan</button>
+                        <button id="filter-reset-btn" class="btn secondary-btn">Reset</button>
+                    </div>
+                </div>
+
+                <ul id="full-transaction-list" class="transaction-list full-height">
                         <!-- All transactions injected via JS -->
                     </ul>
                     <div class="bottom-spacer mobile-only-spacer"></div>
@@ -256,24 +678,86 @@
                     <div class="section-header sticky-header" style="margin-bottom: 0;">
                         <h2><i class="fa-solid fa-sparkles" style="color: #a855f7;"></i> Konsultasi AI</h2>
                     </div>
-                    
                     <div class="chat-container">
                         <div id="chat-messages" class="chat-messages full-height">
-                            <!-- Welcome Message -->
                             <div class="chat-bubble ai-bubble">
                                 Halo! Saya adalah AI Advisor lokal Anda. Tanyakan saya soal "saldo", "pengeluaran", atau minta "tips hemat"!
                             </div>
                         </div>
-                        
                         <div class="chat-input-area">
-                            <form id="chat-form" style="display: flex; gap: 10px; width: 100%;">
+                            <form id="chat-form" style="display: flex; gap: 0.5rem; width: 100%;">
                                 <input type="text" id="chat-input" placeholder="Tanya AI..." required autocomplete="off" style="flex: 1;">
-                                <button type="submit" class="icon-btn primary-btn" style="width: 55px; height: 55px; margin: 0;"><i class="fa-solid fa-paper-plane"></i></button>
+                                <button type="submit" class="icon-btn primary-btn" style="width: 48px; height: 48px; margin: 0;"><i class="fa-solid fa-paper-plane"></i></button>
                             </form>
                         </div>
                     </div>
                 </div>
-                
+
+                <!-- TAB: LAPORAN -->
+                <div id="tab-report" class="tab-content">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2>Laporan Keuangan</h2>
+                            <select id="report-period" class="form-select" style="width: auto; padding: 0.6rem 1rem; font-size: 0.85rem;">
+                                <option value="weekly">Mingguan</option>
+                                <option value="monthly" selected>Bulanan</option>
+                                <option value="yearly">Tahunan</option>
+                            </select>
+                        </div>
+                        <div id="report-summary" class="report-summary">
+                            <div class="stat income">
+                                <i class="fa-solid fa-arrow-trend-up"></i>
+                                <div><span>Pemasukan</span><strong id="report-total-income">Rp 0</strong></div>
+                            </div>
+                            <div class="stat expense">
+                                <i class="fa-solid fa-arrow-trend-down"></i>
+                                <div><span>Pengeluaran</span><strong id="report-total-expense">Rp 0</strong></div>
+                            </div>
+                            <div class="stat">
+                                <i class="fa-solid fa-wallet" style="color: var(--primary-light);"></i>
+                                <div><span>Selisih</span><strong id="report-balance">Rp 0</strong></div>
+                            </div>
+                        </div>
+
+                        <h3 class="report-section-title">Ringkasan Kategori</h3>
+                        <div id="report-category-breakdown" style="margin-bottom: 1.5rem;"></div>
+
+                        <h3 class="report-section-title">Grafik</h3>
+                        <div class="chart-container" style="margin-bottom: 1.5rem;">
+                            <canvas id="reportChart"></canvas>
+                        </div>
+
+                        <h3 class="report-section-title">Analisis Mendalam</h3>
+                        <div class="report-analytics">
+                            <div class="stat">
+                                <span>Rata-rata/Hari</span>
+                                <strong id="report-daily-avg">Rp 0</strong>
+                            </div>
+                            <div class="stat">
+                                <span>Total Transaksi</span>
+                                <strong id="report-total-tx">0</strong>
+                            </div>
+                            <div class="stat">
+                                <span>Transaksi Terbesar</span>
+                                <strong id="report-max-expense">Rp 0</strong>
+                            </div>
+                            <div class="stat">
+                                <span>Tabungan/Hari</span>
+                                <strong id="report-daily-save">Rp 0</strong>
+                            </div>
+                        </div>
+
+                        <h3 class="report-section-title">Tren Bulanan (6 Bulan)</h3>
+                        <div class="chart-container" style="margin-bottom: 1.5rem;">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                        <div class="report-export">
+                            <button id="export-report-btn" class="btn primary-btn"><i class="fa-solid fa-download"></i> Export Laporan</button>
+                        </div>
+                    </div>
+                    <div class="bottom-spacer mobile-only-spacer"></div>
+                </div>
+
             </main>
         </div>
 
@@ -295,6 +779,10 @@
                 <i class="fa-solid fa-clock-rotate-left"></i>
                 <span>Riwayat</span>
             </button>
+            <button class="nav-item" data-target="tab-report">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Laporan</span>
+            </button>
         </nav>
 
         <!-- Mobile Floating Action Button (Hidden on Desktop) -->
@@ -308,7 +796,7 @@
             <div class="sheet-content">
                 <div class="sheet-handle mobile-only"></div>
                 <div class="modal-header">
-                    <h2>Catat Transaksi</h2>
+                    <h2 id="modal-title">Catat Transaksi</h2>
                     <button id="close-modal-btn" class="icon-btn desktop-only"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <form id="transaction-form">
@@ -323,7 +811,7 @@
                         </label>
                     </div>
                     <div class="form-group category-group">
-                        <label class="category-title">Kategori</label>
+                        <label class="category-title">Kategori Pengeluaran</label>
                         <div class="category-grid" id="category-selector">
                             <label class="cat-label">
                                 <input type="radio" name="trans-category" value="Makanan" checked>
@@ -357,11 +845,20 @@
                             </label>
                         </div>
                     </div>
+                    <div class="form-group income-category-group" style="display: none;">
+                        <label class="category-title">Kategori Pemasukan</label>
+                        <div class="category-grid" id="income-category-selector"></div>
+                    </div>
                     <div class="form-group">
                         <label class="category-title">Pilih Tabungan / Dompet</label>
                         <select id="trans-goal" class="form-select">
                             <option value="main">Dompet Utama</option>
-                            <!-- Goals injected via JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="category-title">Sumber Dana (Wallet)</label>
+                        <select id="trans-wallet" class="form-select">
+                            <option value="">-- Pilih Wallet --</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -369,6 +866,17 @@
                     </div>
                     <div class="form-group">
                         <input type="text" id="trans-desc" placeholder="Keterangan (Misal: Uang Jajan)" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="category-title">Foto Struk (Opsional)</label>
+                        <input type="file" id="trans-receipt" accept="image/*" capture="environment" style="display: none;">
+                        <label for="trans-receipt" class="btn secondary-btn" style="text-align: center; cursor: pointer; margin-top: 0;" id="receipt-label">
+                            <i class="fa-solid fa-camera"></i> Pilih / Ambil Foto
+                        </label>
+                        <div id="receipt-preview" style="margin-top: 0.5rem; position: relative; display: none;">
+                            <img id="receipt-img" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: 12px;">
+                            <button type="button" id="remove-receipt-btn" style="position: absolute; top: 8px; right: 8px; background: var(--expense); border: none; color: white; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
                     </div>
                     <button type="submit" class="btn primary-btn full-width">Simpan Transaksi</button>
                 </form>
@@ -379,18 +887,17 @@
     <!-- Lock Screen -->
     <div id="lock-screen" class="lock-screen hidden">
         <div class="lock-content">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
                 <div style="width: 40px;"></div>
                 <i class="fa-solid fa-lock lock-icon"></i>
-                <button class="icon-btn" onclick="closePinModal()" id="close-pin-btn" style="background: transparent; border: none; box-shadow: none; color: var(--text-muted);"><i class="fa-solid fa-xmark"></i></button>
+                <button class="icon-btn" onclick="closePinModal()" id="close-pin-btn" style="background: transparent; border: none; color: var(--text-muted);"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <h2 id="lock-title">Masukkan PIN</h2>
             <div class="pin-display">
                 <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
                 <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
             </div>
-            <div id="pin-message" style="margin-bottom: 20px; font-weight: 500;"></div>
-            
+            <div id="pin-message" style="margin-bottom: 1rem; font-weight: 500;"></div>
             <div class="numpad">
                 <button class="num-btn" onclick="addPin('1')">1</button>
                 <button class="num-btn" onclick="addPin('2')">2</button>
@@ -418,33 +925,153 @@
                 <button id="close-settings-btn" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="settings-list">
-                <div class="form-group">
+                <!-- Budget -->
+                <div class="settings-section">
                     <label class="category-title">Batas Pengeluaran Bulanan (Budget)</label>
-                    <input type="number" id="budget-input" class="form-select" placeholder="Misal: 5000000" style="margin-bottom: 10px;">
+                    <input type="number" id="budget-input" class="form-select" placeholder="Misal: 5000000" style="margin-bottom: 0.5rem;">
                     <button class="btn secondary-btn" onclick="saveBudget()" style="margin-top: 0;">Simpan Budget</button>
                 </div>
-                <div class="form-group" style="margin-top: 2rem;">
+                <!-- Security -->
+                <div class="settings-section">
                     <label class="category-title">Keamanan</label>
-                    <button class="btn secondary-btn" id="setup-pin-btn" style="text-align: left; justify-content: flex-start; margin-top: 5px;">
+                    <button class="btn secondary-btn" id="setup-pin-btn" style="text-align: left; justify-content: flex-start; margin-top: 0;">
                         <i class="fa-solid fa-key"></i> Atur PIN Keamanan
                     </button>
                 </div>
-                <div class="form-group" style="margin-top: 2rem;">
+                <!-- Google Drive Sync -->
+                <div class="settings-section">
+                    <label class="category-title">Sinkronisasi Cloud (Google Drive)</label>
+                    <div id="drive-sync-status" style="margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">
+                        Belum terhubung ke Google Drive.
+                    </div>
+                    <button class="btn primary-btn full-width" id="drive-login-btn" style="margin-top: 0; background: #4285F4; border-color: #4285F4; margin-bottom: 0.5rem;">
+                        <i class="fa-brands fa-google"></i> Login with Google
+                    </button>
+                    <button class="btn secondary-btn full-width" id="drive-logout-btn" style="margin-top: 0; display: none; color: #ef4444; border-color: rgba(239, 68, 68, 0.2);">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                    </button>
+                    <p class="settings-hint">Data Anda 100% aman tersimpan di Google Drive milik Anda sendiri.</p>
+                </div>
+                <!-- Backup & Restore -->
+                <div class="settings-section">
                     <label class="category-title">Backup & Restore</label>
-                    <div style="display: flex; gap: 10px; margin-top: 5px;">
-                        <button class="btn secondary-btn" id="export-btn" style="flex:1;">
-                            <i class="fa-solid fa-download"></i> Export
-                        </button>
-                        <button class="btn secondary-btn" id="import-btn-trigger" style="flex:1;">
-                            <i class="fa-solid fa-upload"></i> Import
-                        </button>
+                    <div class="settings-row">
+                        <button class="btn secondary-btn" id="export-btn"><i class="fa-solid fa-download"></i> Export</button>
+                        <button class="btn secondary-btn" id="import-btn-trigger"><i class="fa-solid fa-upload"></i> Import</button>
                         <input type="file" id="import-file" accept=".json" style="display: none;">
                     </div>
+                </div>
+                <!-- Income Categories -->
+                <div class="settings-section">
+                    <label class="category-title">Kategori Pemasukan</label>
+                    <div id="income-categories-list" style="margin-bottom: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
+                    <div class="settings-row">
+                        <input type="text" id="new-income-category" placeholder="Kategori baru..." style="flex: 1; padding: 0.75rem;">
+                        <button class="btn secondary-btn btn-icon" id="add-income-category-btn"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                </div>
+                <!-- Wallets -->
+                <div class="settings-section">
+                    <label class="category-title">Dompet / Wallet</label>
+                    <div id="wallets-list" style="margin-bottom: 0.5rem;"></div>
+                    <div class="settings-row">
+                        <input type="text" id="new-wallet-name" placeholder="Nama dompet..." style="flex: 1; padding: 0.75rem;">
+                        <button class="btn secondary-btn btn-icon" id="add-wallet-btn"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                </div>
+                <!-- Notifications -->
+                <div class="settings-section">
+                    <label class="category-title">Notifikasi & Pengingat</label>
+                    <div class="settings-toggle-list">
+                        <label class="setting-toggle-label">
+                            <input type="checkbox" id="notif-budget-warning" class="setting-checkbox">
+                            <span>Peringatan Budget 80%</span>
+                        </label>
+                        <label class="setting-toggle-label">
+                            <input type="checkbox" id="notif-daily-reminder" class="setting-checkbox">
+                            <span>Pengingat Harian Catat Transaksi</span>
+                        </label>
+                        <label class="setting-toggle-label">
+                            <input type="checkbox" id="notif-goal-reminder" class="setting-checkbox">
+                            <span>Pengingat Target Tabungan</span>
+                        </label>
+                    </div>
+                    <button class="btn secondary-btn" id="request-notif-permission" style="margin-top: 0.5rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-bell"></i> Aktifkan Notifikasi Browser
+                    </button>
+                </div>
+                <!-- Currency -->
+                <div class="settings-section">
+                    <label class="category-title">Mata Uang</label>
+                    <select id="currency-select" class="form-select" style="margin-bottom: 0.5rem;">
+                        <option value="IDR">Rp - Rupiah Indonesia (IDR)</option>
+                        <option value="USD">$ - US Dollar (USD)</option>
+                        <option value="EUR">Euro (EUR)</option>
+                        <option value="JPY">Yen Jepang (JPY)</option>
+                        <option value="GBP">Pound Sterling (GBP)</option>
+                        <option value="MYR">RM - Ringgit Malaysia (MYR)</option>
+                        <option value="SGD">S$ - Singapore Dollar (SGD)</option>
+                    </select>
+                    <button class="btn secondary-btn" id="save-currency-btn" style="margin-top: 0;">Simpan Mata Uang</button>
+                </div>
+                <!-- Auto Backup -->
+                <div class="settings-section">
+                    <label class="category-title">Auto-Backup</label>
+                    <div class="settings-toggle-list">
+                        <label class="setting-toggle-label">
+                            <input type="checkbox" id="auto-backup-toggle" class="setting-checkbox">
+                            <span>Auto-backup saat ada perubahan data</span>
+                        </label>
+                    </div>
+                    <p class="settings-hint">Data akan otomatis dibackup ke browser secara berkala.</p>
+                    <button class="btn secondary-btn" id="restore-backup-btn" style="margin-top: 0.5rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-rotate-left"></i> Restore dari Auto-Backup
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Quick Receipt Sheet -->
+    <div id="quick-receipt-overlay" class="sheet-overlay" style="display:none;"></div>
+    <div id="quick-receipt-sheet" class="bottom-sheet" style="display:none;">
+        <div class="sheet-content">
+            <div class="sheet-handle mobile-only"></div>
+            <div class="modal-header">
+                <h2>Foto Struk</h2>
+                <button id="close-quick-receipt" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.85rem;">Ambil foto struk, masukkan nominal, langsung catat pengeluaran.</p>
+            <div id="qr-preview" class="qr-preview" style="display:none;">
+                <img id="qr-preview-img" src="" alt="Preview">
+                <button id="qr-remove-photo" class="btn secondary-btn" style="margin-top: 0.5rem;">Hapus Foto</button>
+            </div>
+            <div id="qr-upload-area" class="qr-upload-area">
+                <i class="fa-solid fa-camera" style="font-size: 1.8rem; color: var(--primary-light); margin-bottom: 0.5rem; display: block;"></i>
+                <p style="color: var(--text-muted); margin: 0; font-size: 0.9rem;">Klik untuk ambil foto</p>
+            </div>
+            <input type="file" id="qr-file-input" accept="image/*" capture="environment" style="display:none;">
+            <div class="form-group">
+                <label class="category-title">Nominal *</label>
+                <input type="text" id="qr-amount" placeholder="Contoh: 50000" inputmode="numeric" required>
+            </div>
+            <div class="form-group">
+                <label class="category-title">Keterangan</label>
+                <input type="text" id="qr-desc" placeholder="Contoh: Beli kopi">
+            </div>
+            <div class="form-group">
+                <label class="category-title">Kategori</label>
+                <div id="qr-categories" style="display:flex; flex-wrap:wrap; gap:0.4rem;"></div>
+            </div>
+            <button id="qr-submit" class="btn primary-btn btn-block" disabled>
+                <i class="fa-solid fa-paper-plane"></i> Catat Pengeluaran
+            </button>
+        </div>
+    </div>
+
+    <!-- Google API Scripts -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
     <script src="app.js"></script>
 </body>
 </html>
