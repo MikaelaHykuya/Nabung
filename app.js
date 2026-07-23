@@ -159,28 +159,30 @@ const updateDashboard = () => {
     const balance = income - expense;
 
     animateValue(totalBalanceEl, prevBalance, balance, 800);
-    animateValue(totalIncomeEl, prevIncome, income, 800);
+    animateValue(totalIncomeEl, prevIncome, income - expense, 800);
     animateValue(totalExpenseEl, prevExpense, expense, 800);
     
-    prevBalance = balance; prevIncome = income; prevExpense = expense;
+    prevBalance = balance; prevIncome = income - expense; prevExpense = expense;
 
     if(transGoalSelect) {
-        transGoalSelect.innerHTML = '<option value="main">Dompet Utama</option>';
+        let optionsHtml = '<option value="main">Dompet Utama</option>';
         if (goals.length > 0) {
-            transGoalSelect.innerHTML += '<optgroup label="Target Tabungan">';
-            goals.forEach(g => transGoalSelect.innerHTML += `<option value="${g.id}">${g.name}</option>`);
-            transGoalSelect.innerHTML += '</optgroup>';
+            optionsHtml += '<optgroup label="Target Tabungan">';
+            goals.forEach(g => optionsHtml += `<option value="${g.id}">${g.name}</option>`);
+            optionsHtml += '</optgroup>';
         }
         if (groups.length > 0) {
-            transGoalSelect.innerHTML += '<optgroup label="Tabungan Bersama (Grup)">';
-            groups.forEach(g => transGoalSelect.innerHTML += `<option value="${g.id}">${g.name}</option>`);
-            transGoalSelect.innerHTML += '</optgroup>';
+            optionsHtml += '<optgroup label="Tabungan Bersama (Grup)">';
+            groups.forEach(g => optionsHtml += `<option value="${g.id}">${g.name}</option>`);
+            optionsHtml += '</optgroup>';
         }
+        transGoalSelect.innerHTML = optionsHtml;
     }
     const walletSelect = document.getElementById('trans-wallet');
     if(walletSelect) {
-        walletSelect.innerHTML = '<option value="">-- Pilih Wallet --</option>';
-        wallets.forEach(w => walletSelect.innerHTML += `<option value="${w.id}">${w.name}</option>`);
+        let walletHtml = '<option value="">-- Pilih Wallet --</option>';
+        wallets.forEach(w => walletHtml += `<option value="${w.id}">${w.name}</option>`);
+        walletSelect.innerHTML = walletHtml;
     }
     renderIncomeCategories();
     
