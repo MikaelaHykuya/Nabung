@@ -1,10 +1,10 @@
-const CACHE_NAME = 'nabung-super-app-v1';
+const CACHE_NAME = 'nabung-super-app-v2';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js',
-  '/ai_logo.png'
+  './',
+  './index.html',
+  './style.css',
+  './app.js',
+  './ai_logo.png'
 ];
 
 self.addEventListener('install', event => {
@@ -13,6 +13,20 @@ self.addEventListener('install', event => {
       .then(cache => {
         return cache.addAll(urlsToCache);
       })
+  );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
   );
 });
 
