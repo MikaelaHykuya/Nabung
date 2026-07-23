@@ -1840,37 +1840,36 @@ transactionForm.addEventListener('submit', (e) => {
 });
 
 // --- TABUNGAN BERSAMA ---
-const groupsList = document.getElementById('groups-list');
-const groupForm = document.getElementById('group-form');
-const addGroupBtn = document.getElementById('add-group-btn');
-const cancelGroupBtn = document.getElementById('cancel-group-btn');
+const addGroupBtns = document.querySelectorAll('.add-group-btn');
+const cancelGroupBtns = document.querySelectorAll('.cancel-group-btn');
 
 const renderGroups = () => {
-    if (!groupsList) return;
-    groupsList.innerHTML = '';
-    if (groups.length === 0) { groupsList.innerHTML = '<div class="empty-state" style="padding: 1rem;"><p>Belum ada grup tabungan.</p></div>'; return; }
-    groups.forEach(g => {
-        const totalSaved = (g.contributions || []).reduce((a, b) => a + b.amount, 0);
-        const progress = g.target > 0 ? Math.min((totalSaved / g.target) * 100, 100) : 0;
-        const div = document.createElement('div');
-        div.classList.add('goal-item');
-        div.innerHTML = `
-            <h3>${g.name}</h3>
-            <button class="delete-goal-btn" onclick="removeGroup('${g.id}')"><i class="fa-solid fa-trash"></i></button>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Anggota: ${(g.members||[]).join(', ') || 'Solo'}</p>
-            <div class="progress-container">
-                <div class="progress-labels">
-                    <span>${formatRupiah(totalSaved)} / ${formatRupiah(g.target)}</span>
-                    <span>${progress.toFixed(1)}%</span>
+    document.querySelectorAll('.groups-list').forEach(groupsList => {
+        groupsList.innerHTML = '';
+        if (groups.length === 0) { groupsList.innerHTML = '<div class="empty-state" style="padding: 1rem;"><p>Belum ada grup tabungan.</p></div>'; return; }
+        groups.forEach(g => {
+            const totalSaved = (g.contributions || []).reduce((a, b) => a + b.amount, 0);
+            const progress = g.target > 0 ? Math.min((totalSaved / g.target) * 100, 100) : 0;
+            const div = document.createElement('div');
+            div.classList.add('goal-item');
+            div.innerHTML = `
+                <h3>${g.name}</h3>
+                <button class="delete-goal-btn" onclick="removeGroup('${g.id}')"><i class="fa-solid fa-trash"></i></button>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Anggota: ${(g.members||[]).join(', ') || 'Solo'}</p>
+                <div class="progress-container">
+                    <div class="progress-labels">
+                        <span>${formatRupiah(totalSaved)} / ${formatRupiah(g.target)}</span>
+                        <span>${progress.toFixed(1)}%</span>
+                    </div>
+                    <div class="progress-bar-wrapper"><div class="progress-bar" style="width: 0%;"></div></div>
                 </div>
-                <div class="progress-bar-wrapper"><div class="progress-bar" style="width: 0%;"></div></div>
-            </div>
-            <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
-                <button class="btn secondary-btn" onclick="addGroupContribution('${g.id}')" style="flex:1; padding: 0.6rem; font-size: 0.85rem; margin-top: 0;"><i class="fa-solid fa-plus"></i> Setor</button>
-            </div>
-        `;
-        groupsList.appendChild(div);
-        setTimeout(() => { const bar = div.querySelector('.progress-bar'); if (bar) bar.style.width = `${progress}%`; }, 100);
+                <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
+                    <button class="btn secondary-btn" onclick="addGroupContribution('${g.id}')" style="flex:1; padding: 0.6rem; font-size: 0.85rem; margin-top: 0;"><i class="fa-solid fa-plus"></i> Setor</button>
+                </div>
+            `;
+            groupsList.appendChild(div);
+            setTimeout(() => { const bar = div.querySelector('.progress-bar'); if (bar) bar.style.width = `${progress}%`; }, 100);
+        });
     });
 };
 
@@ -1892,24 +1891,41 @@ window.addGroupContribution = (id) => {
     renderGroups();
 };
 
-if (addGroupBtn) addGroupBtn.addEventListener('click', () => { vibrate(30); groupsList.classList.add('hidden'); groupForm.classList.remove('hidden'); document.getElementById('group-name-input').value = ''; document.getElementById('group-target-input').value = ''; document.getElementById('group-members-input').value = ''; });
-if (cancelGroupBtn) cancelGroupBtn.addEventListener('click', () => { groupForm.classList.add('hidden'); groupsList.classList.remove('hidden'); });
-if (groupForm) {
-    groupForm.addEventListener('submit', (e) => {
+addGroupBtns.forEach(btn => btn.addEventListener('click', (e) => { 
+    vibrate(30); 
+    const section = e.target.closest('section');
+    section.querySelector('.groups-list').classList.add('hidden'); 
+    section.querySelector('.group-form').classList.remove('hidden'); 
+    section.querySelector('.group-name-input').value = ''; 
+    section.querySelector('.group-target-input').value = ''; 
+    section.querySelector('.group-members-input').value = ''; 
+}));
+
+cancelGroupBtns.forEach(btn => btn.addEventListener('click', (e) => { 
+    const section = e.target.closest('section');
+    section.querySelector('.group-form').classList.add('hidden'); 
+    section.querySelector('.groups-list').classList.remove('hidden'); 
+}));
+
+document.querySelectorAll('.group-form').forEach(form => {
+    form.addEventListener('submit', (e) => {
         e.preventDefault(); vibrate(50);
-        const name = document.getElementById('group-name-input').value.trim();
-        const target = parseCurrency(document.getElementById('group-target-input').value);
-        const membersStr = document.getElementById('group-members-input').value.trim();
+        const name = form.querySelector('.group-name-input').value.trim();
+        const target = parseCurrency(form.querySelector('.group-target-input').value);
+        const membersStr = form.querySelector('.group-members-input').value.trim();
         const members = membersStr ? membersStr.split(',').map(m => m.trim()).filter(m => m) : [];
         if (!name || target <= 0) return;
         groups.push({ id: 'g_' + generateID(), name, target, members, contributions: [] });
         localStorage.setItem('nabung_groups', JSON.stringify(groups));
-        groupForm.classList.add('hidden'); groupsList.classList.remove('hidden');
+        form.classList.add('hidden'); 
+        form.closest('section').querySelector('.groups-list').classList.remove('hidden');
         renderGroups();
     });
-}
-const groupTargetInput = document.getElementById('group-target-input');
-if (groupTargetInput) { groupTargetInput.type = 'text'; groupTargetInput.inputMode = 'numeric'; groupTargetInput.addEventListener('input', formatInputCurrency); }
+});
+
+document.querySelectorAll('.group-target-input').forEach(input => { 
+    input.type = 'text'; input.inputMode = 'numeric'; input.addEventListener('input', formatInputCurrency); 
+});
 
 // --- DEEP ANALYTICS ---
 let trendChartInstance = null;
