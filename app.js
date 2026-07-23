@@ -1185,7 +1185,11 @@ if (appPin && appPin.length !== 6) {
     alert('Sistem Keamanan diperbarui ke 6-digit. PIN lama Anda telah direset demi keamanan. Silakan atur ulang PIN di menu Pengaturan.');
 }
 
-if (appPin) { lockScreen.classList.remove('hidden'); }
+if (appPin) { 
+    lockScreen.classList.remove('hidden'); 
+    const closeBtn = document.getElementById('close-pin-btn');
+    if (closeBtn) closeBtn.style.display = 'none'; // Cannot bypass lock screen
+}
 
 const updatePinDots = () => { pinDots.forEach((dot, i) => { if (i < currentPinInput.length) dot.classList.add('filled'); else dot.classList.remove('filled'); }); };
 
@@ -1214,13 +1218,46 @@ const settingsOverlay = document.getElementById('settings-overlay');
 const openSettingsBtn = document.getElementById('settings-toggle-btn');
 const closeSettingsBtn = document.getElementById('close-settings-btn');
 
-const openSettings = () => { settingsSheet.classList.add('open'); vibrate(50); };
+const openSettings = () => { 
+    const setupPinBtn = document.getElementById('setup-pin-btn');
+    if (setupPinBtn) {
+        if (appPin) {
+            setupPinBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Hapus PIN Keamanan';
+            setupPinBtn.style.color = 'var(--expense)';
+        } else {
+            setupPinBtn.innerHTML = '<i class="fa-solid fa-key"></i> Atur PIN Keamanan';
+            setupPinBtn.style.color = 'var(--text-main)';
+        }
+    }
+    settingsSheet.classList.add('open'); 
+    vibrate(50); 
+};
 const closeSettings = () => { settingsSheet.classList.remove('open'); vibrate(50); };
 if(openSettingsBtn) openSettingsBtn.addEventListener('click', openSettings);
 if(closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettings);
 if(settingsOverlay) settingsOverlay.addEventListener('click', closeSettings);
 
-document.getElementById('setup-pin-btn')?.addEventListener('click', () => { if (appPin) { if(confirm('Hapus PIN Keamanan saat ini?')) { localStorage.removeItem('nabung_pin'); appPin = null; alert('PIN Dihapus'); } } else { closeSettings(); isSettingPin = true; confirmPinStr = ''; currentPinInput = ''; updatePinDots(); lockTitle.innerText = 'Masukkan PIN Baru'; lockScreen.classList.remove('hidden'); pinMessage.innerText = ''; } });
+document.getElementById('setup-pin-btn')?.addEventListener('click', () => { 
+    if (appPin) { 
+        if(confirm('Hapus PIN Keamanan saat ini?')) { 
+            localStorage.removeItem('nabung_pin'); 
+            appPin = null; 
+            alert('PIN Dihapus'); 
+            closeSettings(); // close settings so they see it's updated next time
+        } 
+    } else { 
+        closeSettings(); 
+        isSettingPin = true; 
+        confirmPinStr = ''; 
+        currentPinInput = ''; 
+        updatePinDots(); 
+        lockTitle.innerText = 'Masukkan PIN Baru'; 
+        lockScreen.classList.remove('hidden'); 
+        pinMessage.innerText = ''; 
+        const closeBtn = document.getElementById('close-pin-btn');
+        if (closeBtn) closeBtn.style.display = 'block'; // Can cancel setup
+    } 
+});
 
 // Backup & Restore
 document.getElementById('export-btn')?.addEventListener('click', () => { const data = { transactions, goals, theme: localStorage.getItem('nabung_theme'), pin: appPin }; const blob = new Blob([JSON.stringify(data)], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Nabung_Backup.json'; a.click(); });
