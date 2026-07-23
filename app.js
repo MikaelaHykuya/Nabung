@@ -166,7 +166,16 @@ const updateDashboard = () => {
 
     if(transGoalSelect) {
         transGoalSelect.innerHTML = '<option value="main">Dompet Utama</option>';
-        goals.forEach(g => transGoalSelect.innerHTML += `<option value="${g.id}">${g.name}</option>`);
+        if (goals.length > 0) {
+            transGoalSelect.innerHTML += '<optgroup label="Target Tabungan">';
+            goals.forEach(g => transGoalSelect.innerHTML += `<option value="${g.id}">${g.name}</option>`);
+            transGoalSelect.innerHTML += '</optgroup>';
+        }
+        if (groups.length > 0) {
+            transGoalSelect.innerHTML += '<optgroup label="Tabungan Bersama (Grup)">';
+            groups.forEach(g => transGoalSelect.innerHTML += `<option value="${g.id}">${g.name}</option>`);
+            transGoalSelect.innerHTML += '</optgroup>';
+        }
     }
     const walletSelect = document.getElementById('trans-wallet');
     if(walletSelect) {
@@ -1848,7 +1857,7 @@ const renderGroups = () => {
         groupsList.innerHTML = '';
         if (groups.length === 0) { groupsList.innerHTML = '<div class="empty-state" style="padding: 1rem;"><p>Belum ada grup tabungan.</p></div>'; return; }
         groups.forEach(g => {
-            const totalSaved = (g.contributions || []).reduce((a, b) => a + b.amount, 0);
+            const totalSaved = getGoalBalance(g.id) + (g.contributions || []).reduce((a, b) => a + b.amount, 0);
             const progress = g.target > 0 ? Math.min((totalSaved / g.target) * 100, 100) : 0;
             const div = document.createElement('div');
             div.classList.add('goal-item');
@@ -1864,7 +1873,7 @@ const renderGroups = () => {
                     <div class="progress-bar-wrapper"><div class="progress-bar" style="width: 0%;"></div></div>
                 </div>
                 <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
-                    <button class="btn secondary-btn" onclick="addGroupContribution('${g.id}')" style="flex:1; padding: 0.6rem; font-size: 0.85rem; margin-top: 0;"><i class="fa-solid fa-plus"></i> Setor</button>
+                    <button class="btn secondary-btn" onclick="addGroupTransaction('${g.id}')" style="flex:1; padding: 0.6rem; font-size: 0.85rem; margin-top: 0;"><i class="fa-solid fa-plus"></i> Setor / Pakai Uang</button>
                 </div>
             `;
             groupsList.appendChild(div);
@@ -1875,20 +1884,29 @@ const renderGroups = () => {
 
 window.removeGroup = (id) => { vibrate(50); groups = groups.filter(g => g.id !== id); localStorage.setItem('nabung_groups', JSON.stringify(groups)); renderGroups(); };
 
-window.addGroupContribution = (id) => {
-    const group = groups.find(g => g.id === id);
-    if (!group) return;
-    const amount = prompt(`Setor ke "${group.name}"\nMasukkan jumlah (Rp):`);
-    if (!amount) return;
-    const parsed = parseInt(amount.replace(/[^0-9]/g, ''));
-    if (isNaN(parsed) || parsed <= 0) return;
-    const member = prompt(`Siapa yang menyetor? (${(group.members||[]).join(', ') || 'Solo'})`) || 'Anda';
-    if (!group.contributions) group.contributions = [];
-    group.contributions.push({ member, amount: parsed, date: new Date().toISOString() });
-    localStorage.setItem('nabung_groups', JSON.stringify(groups));
-    vibrate(50);
-    alert(`${member} menyetor ${formatRupiah(parsed)} ke "${group.name}"!`);
-    renderGroups();
+window.addGroupTransaction = (id) => {
+    vibrate(30);
+    // ensure transGoalSelect has the latest options
+    updateDashboard();
+    
+    // open transaction sheet
+    if (typeof transactionSheet !== 'undefined' && transactionSheet) {
+        transactionSheet.classList.add('open');
+    }
+    
+    // pre-select the group in the dropdown
+    const transGoalSelect = document.getElementById('trans-goal');
+    if (transGoalSelect) {
+        transGoalSelect.value = id;
+    }
+    
+    // Select income radio by default for "Setor"
+    const incomeRadio = document.querySelector('.income-radio input');
+    if (incomeRadio) {
+        incomeRadio.checked = true;
+        // manually trigger the change event to update the UI
+        incomeRadio.dispatchEvent(new Event('change'));
+    }
 };
 
 addGroupBtns.forEach(btn => btn.addEventListener('click', (e) => { 
