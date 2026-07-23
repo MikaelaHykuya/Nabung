@@ -429,13 +429,25 @@ const createTransactionDOM = (transaction) => {
     const catMap = transaction.type === 'income' ? incomeCategoryMap : categoryMap;
     const iconHTML = catMap[cat] || catMap['Lainnya'];
     
+    let badgeHTML = '';
+    if (transaction.goalId && transaction.goalId !== 'main') {
+        const isGroup = (typeof groups !== 'undefined' ? groups : []).find(g => g.id === transaction.goalId);
+        const isGoal = (typeof goals !== 'undefined' ? goals : []).find(g => g.id === transaction.goalId);
+        if (isGroup) {
+            badgeHTML = `<span style="font-size: 0.7rem; background: var(--primary-light); color: white; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px;">Grup: ${isGroup.name}</span>`;
+        } else if (isGoal) {
+            badgeHTML = `<span style="font-size: 0.7rem; background: var(--secondary); color: white; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px;">Target: ${isGoal.name}</span>`;
+        }
+    }
+    
     li.innerHTML = `
         <div class="trans-left-group">
             <div class="trans-cat-icon">${iconHTML}</div>
             <div class="trans-info">
                 <span class="trans-desc">${transaction.text}</span>
                 <span class="trans-date">${formatDate(transaction.date)}</span>
-                ${transaction.receipt ? `<span class="receipt-indicator" style="color: #a855f7; font-size: 0.75rem; cursor: pointer; margin-top: 2px;"><i class="fa-solid fa-image"></i> Ada Struk</span>` : ''}
+                ${badgeHTML}
+                ${transaction.receipt ? `<span class="receipt-indicator" style="color: #a855f7; font-size: 0.75rem; cursor: pointer; margin-top: 2px; display: block;"><i class="fa-solid fa-image"></i> Ada Struk</span>` : ''}
             </div>
         </div>
         <div style="display: flex; align-items: center;">
@@ -444,6 +456,15 @@ const createTransactionDOM = (transaction) => {
             <button class="delete-btn" onclick="removeTransaction(${transaction.id}, event)"><i class="fa-solid fa-trash"></i></button>
         </div>
     `;
+    
+    const receiptIndicator = li.querySelector('.receipt-indicator');
+    if (receiptIndicator && transaction.receipt) {
+        receiptIndicator.addEventListener('click', (e) => {
+            e.stopPropagation();
+            viewReceipt(transaction.receipt);
+        });
+    }
+    
     return li;
 };
 
