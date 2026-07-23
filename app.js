@@ -598,7 +598,6 @@ let init = () => {
     }
     renderRecurringSavings();
     renderRecurringTransactions();
-    renderGroups();
     updateDashboard();
 };
 
