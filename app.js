@@ -626,7 +626,7 @@ if(amountInput) { amountInput.type = 'text'; amountInput.inputMode = 'numeric'; 
 if(goalAmountInput) { goalAmountInput.type = 'text'; goalAmountInput.inputMode = 'numeric'; goalAmountInput.addEventListener('input', formatInputCurrency); }
 
 const openSheet = () => { vibrate(50); transactionSheet.classList.add('open'); };
-const closeSheet = () => {
+let closeSheet = () => {
     transactionSheet.classList.remove('open');
     editingTransactionId = null;
     const submitBtn = transactionForm.querySelector('button[type="submit"]');
