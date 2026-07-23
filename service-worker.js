@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nabung-super-app-v2';
+const CACHE_NAME = 'nabung-super-app-v3';
 const urlsToCache = [
   './',
   './index.html',
@@ -30,14 +30,21 @@ self.addEventListener('activate', event => {
   );
 });
 
+// Stale-While-Revalidate strategy to prevent permanent caching
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
-      })
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.match(event.request).then(response => {
+        const fetchPromise = fetch(event.request).then(networkResponse => {
+          if (networkResponse && networkResponse.status === 200) {
+            cache.put(event.request, networkResponse.clone());
+          }
+          return networkResponse;
+        }).catch(() => {
+          // Ignore network errors (offline mode)
+        });
+        return response || fetchPromise;
+      });
+    })
   );
 });
