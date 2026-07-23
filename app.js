@@ -1956,7 +1956,13 @@ const renderGroups = () => {
     });
 };
 
-window.removeGroup = (id) => { vibrate(50); groups = groups.filter(g => g.id !== id); localStorage.setItem('nabung_groups', JSON.stringify(groups)); renderGroups(); };
+window.removeGroup = (id) => { 
+    vibrate(50); 
+    groups = groups.filter(g => g.id !== id); 
+    localStorage.setItem('nabung_groups', JSON.stringify(groups)); 
+    renderGroups(); 
+    updateDashboard();
+};
 
 window.addGroupTransaction = (id) => {
     vibrate(30);
@@ -2012,6 +2018,7 @@ document.querySelectorAll('.group-form').forEach(form => {
         form.classList.add('hidden'); 
         form.closest('section').querySelector('.groups-list').classList.remove('hidden');
         renderGroups();
+        updateDashboard();
     });
 });
 
