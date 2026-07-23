@@ -968,6 +968,15 @@ async function initializeGapiClient() {
     await gapi.client.init({
         discoveryDocs: DISCOVERY_DOCS,
     });
+    
+    const storedToken = localStorage.getItem('nabung_gapi_token');
+    if (storedToken) {
+        gapi.client.setToken(JSON.parse(storedToken));
+        if(driveSyncStatus) driveSyncStatus.innerText = "Terhubung (Sesi Aktif).";
+        if(driveLoginBtn) driveLoginBtn.style.display = 'none';
+        if(driveLogoutBtn) driveLogoutBtn.style.display = 'block';
+    }
+    
     gapiInited = true;
     maybeEnableButtons();
 }
@@ -980,9 +989,10 @@ function gisLoaded() {
             if (response.error !== undefined) {
                 throw (response);
             }
-            driveSyncStatus.innerText = "Terhubung. Sedang menyinkronkan...";
-            driveLoginBtn.style.display = 'none';
-            driveLogoutBtn.style.display = 'block';
+            localStorage.setItem('nabung_gapi_token', JSON.stringify(gapi.client.getToken()));
+            if(driveSyncStatus) driveSyncStatus.innerText = "Terhubung. Sedang menyinkronkan...";
+            if(driveLoginBtn) driveLoginBtn.style.display = 'none';
+            if(driveLogoutBtn) driveLogoutBtn.style.display = 'block';
             downloadFromDrive(); // sync on login
         },
     });
@@ -1016,10 +1026,16 @@ if(driveLogoutBtn) {
         if (token !== null) {
             google.accounts.oauth2.revoke(token.access_token, () => {
                 gapi.client.setToken('');
+                localStorage.removeItem('nabung_gapi_token');
                 driveSyncStatus.innerText = "Belum terhubung ke Google Drive.";
                 driveLoginBtn.style.display = 'block';
                 driveLogoutBtn.style.display = 'none';
             });
+        } else {
+            localStorage.removeItem('nabung_gapi_token');
+            driveSyncStatus.innerText = "Belum terhubung ke Google Drive.";
+            driveLoginBtn.style.display = 'block';
+            driveLogoutBtn.style.display = 'none';
         }
     });
 }
