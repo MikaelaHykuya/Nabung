@@ -66,8 +66,10 @@ body {
     display: flex; justify-content: center; align-items: center;
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
 }
 
 /* ============================================
@@ -94,7 +96,7 @@ body {
 .splash-title {
     font-size: 2.5rem; font-weight: 800; margin: 0;
     background: var(--primary-gradient);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
 .splash-subtitle {
     font-size: 1rem; color: var(--text-muted); margin: 0; letter-spacing: 2px;
@@ -222,6 +224,7 @@ body {
     scroll-behavior: smooth;
     -ms-overflow-style: none; scrollbar-width: thin;
     -webkit-overflow-scrolling: touch;
+    will-change: transform;
 }
 .content-area::-webkit-scrollbar { width: 5px; }
 .content-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 10px; }
@@ -285,7 +288,7 @@ body {
     position: relative; font-size: 3.5rem; font-weight: 800;
     color: var(--text-main); margin-bottom: 2rem; letter-spacing: -2px;
     background: linear-gradient(to bottom, #ffffff, #a1a1aa);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
 .balance-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .stat {
@@ -566,6 +569,8 @@ input:focus { outline: none; border-color: #00f2fe; box-shadow: 0 0 0 3px rgba(0
     box-shadow: 0 25px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08);
     border: 1px solid var(--glass-border);
     backdrop-filter: blur(40px); max-height: 90vh; overflow-y: auto;
+    will-change: transform, opacity;
+    -webkit-overflow-scrolling: touch;
 }
 .bottom-sheet.open .sheet-content { transform: scale(1) translateY(0); opacity: 1; }
 .sheet-content::-webkit-scrollbar { width: 4px; }

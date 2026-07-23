@@ -90,7 +90,6 @@ let wallets = JSON.parse(localStorage.getItem('nabung_wallets')) || [];
 let notifSettings = JSON.parse(localStorage.getItem('nabung_notif')) || { budgetWarning: true, dailyReminder: false, goalReminder: true };
 let actionHistory = [];
 let pendingReceiptData = null;
-let groups = JSON.parse(localStorage.getItem('nabung_groups')) || [];
 let currencyConfig = JSON.parse(localStorage.getItem('nabung_currency')) || { code: 'IDR', symbol: 'Rp', locale: 'id-ID' };
 let autoBackupEnabled = localStorage.getItem('nabung_auto_backup') === 'true';
 
